@@ -34,8 +34,9 @@ int main()
 
   PID pid, pid_speed;
   // Initialize the pid variable.
-  pid.Init(0.013, 0.00, 0.35);
-  pid_speed.Init(0.7, 0.0,0.1);
+  // started with only P control and added D control into it
+  pid.Init(0.13, 0.00, 0.95);
+  pid_speed.Init(0.12, 0,0);
   h.onMessage([&pid, &pid_speed](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
@@ -58,23 +59,28 @@ int main()
           * NOTE: Feel free to play around with the throttle and speed. Maybe use
           * another PID controller to control the speed!
           */
+          // PID for steering
 	  pid.UpdateError(cte);
 	  steer_value=-pid.TotalError();
 	  if(steer_value>1) steer_value=1;
 	  if(steer_value<-1) steer_value=-1;
-/**
-	  pid_speed.UpdateError(fabs(cte));
-	  throttle_value=1-pid_speed.TotalError();
-
-	  if(throttle_value>1.0) throttle_value=1.0;
-	  if(throttle_value<0&&speed<30) throttle_value=0.1;
-	  if(throttle_value<-1.0) throttle_value=-1.0;
-	  if(speed>40) throttle_value=0;
-**/
-	  throttle_value=0.1;
-          
+	  //PID for speed
+	  double speed_ref=15;
+ 	  
+	  double angle_thres=5;
+	  double cte_thres=1;
+	  pid_speed.UpdateError(speed_ref-speed);
+	  throttle_value=pid_speed.TotalError()-0.05*fabs(cte);
+	  // limit speed when the steering angle or cte is larger than threshold
+ 	  if(fabs(angle)>angle_thres) throttle_value=0.03*pid_speed.TotalError();
+	  if(fabs(cte)>cte_thres) throttle_value=0.01*pid_speed.TotalError();
+          /**
+	  if(fabs(angle)>angle_thres||fabs(cte)>cte_thres) {
+		pid_speed.UpdateError(speed_lim-speed);
+	  	throttle_value=pid_speed.TotalError();
+	  }**/
           // DEBUG
-          std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
+          std::cout << "CTE: " << cte << " Steering Angle: " << angle << std::endl;
 	  std::cout << "speed:" << speed<<std::endl;
 
           json msgJson;
