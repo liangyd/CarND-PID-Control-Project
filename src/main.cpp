@@ -34,8 +34,10 @@ int main()
 
   PID pid, pid_speed;
   // Initialize the pid variable.
-  // started with only P control and added D control into it
+  // manual tuning: started with only P control and added D control into it
+  // pid for steering: P control has a large oscillation, thus I use D control to reduce the overshoot
   pid.Init(0.13, 0.00, 0.95);
+  // pud for speed: P control for speed is sufficient
   pid_speed.Init(0.12, 0,0);
   h.onMessage([&pid, &pid_speed](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
